@@ -1,6 +1,64 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import Image from 'next/image'
+import SyntaxHighlighter from 'react-syntax-highlighter';
+import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/hljs';
+import { Select } from '$/components'
+import { TDistrict, TProvince, TRegency, TVillage } from '$/types';
 
 export default function Home() {
+   const [provinces, setProvinces] = useState<TProvince[]>([]);
+
+   const [provinceCode, setProvinceCode] = useState('');
+   const [regencies, setRegencies] = useState<TRegency[]>([]);
+
+   const [regencieCode, setRegencieCode] = useState('');
+   const [districts, setDistricts] = useState<TDistrict[]>([]);
+
+   const [districtCode, setDistrictCode] = useState('');
+   const [villages, setVillages] = useState<TVillage[]>([]);
+
+   async function handleFetch<T>(pathname: 'provinces' | 'regencies' | 'districts' | 'villages', onCange: (value: T[]) => void, code?: string) {
+      try {
+         const data: T[] = await fetch(`api/${pathname}${typeof code === 'undefined' ? '' : (`/`).concat(code) }`).then(e => e.json())
+         onCange(data);
+      } catch (err: unknown) {
+         console.log(`ERROR ${pathname} :>> ', err`);
+      }
+   }
+
+   useEffect(() => {
+      handleFetch('provinces', setProvinces);
+   }, []);
+
+   useEffect(() => {
+      if (provinceCode) {
+         handleFetch('regencies', setRegencies, provinceCode);
+      }
+   }, [provinceCode]);
+
+   useEffect(() => {
+      if (regencieCode) {
+         handleFetch('districts', setDistricts, regencieCode);
+      }
+   }, [regencieCode]);
+
+   useEffect(() => {
+      if (districtCode) {
+         handleFetch('villages', setVillages, districtCode);
+      }
+   }, [districtCode]);
+
+   const code = `const handleFetchProvinces = async () => {
+   try {
+      const data: Response[] = await fetch('https://alamat.cyclic.app/provinces').then(e => e.json())
+      setProvinces(data);
+   } catch (err: unknown) {
+      console.log('ERROR PROVINCES :>> ', err);
+   }
+}`
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
       <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
@@ -108,6 +166,51 @@ export default function Home() {
           </p>
         </a>
       </div>
+
+      <div>
+            <div className="grid grid-cols-2">
+               <div>
+                  <SyntaxHighlighter language="javascript" style={atomOneDark}>
+                     {code}
+                  </SyntaxHighlighter>
+               </div>
+               <div className="max-h-[50vh] overflow-auto">
+                  <SyntaxHighlighter language="json" style={atomOneDark}>
+                     {JSON.stringify(provinces, null, 3)}
+                  </SyntaxHighlighter>
+               </div>
+            </div>
+            {regencies && (
+               <>
+                  <Select data={provinces} onChange={setProvinceCode} />
+               <div className="max-h-[50vh] overflow-auto">
+                  <SyntaxHighlighter language="json" style={atomOneDark}>
+                     {JSON.stringify(regencies, null, 3)}
+                  </SyntaxHighlighter>
+            </div>
+               </>
+            )}
+            {districts && (
+               <>
+               <Select data={regencies} onChange={setRegencieCode} />
+                  <div className="max-h-[50vh] overflow-auto">
+                     <SyntaxHighlighter language="json" style={atomOneDark}>
+                        {JSON.stringify(districts, null, 3)}
+                     </SyntaxHighlighter>
+               </div>
+               </>
+            )}
+            {villages && (
+               <>
+               <Select data={districts} onChange={setDistrictCode} />
+                  <div className="max-h-[50vh] overflow-auto">
+                     <SyntaxHighlighter language="json" style={atomOneDark}>
+                        {JSON.stringify(villages, null, 3)}
+                     </SyntaxHighlighter>
+               </div>
+               </>
+            )}
+         </div>
     </main>
   )
 }
